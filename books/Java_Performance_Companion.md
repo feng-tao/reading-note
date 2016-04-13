@@ -85,3 +85,5 @@ Concurrent marking
 
 Evacuation failures
   1. Fail to find region when trying to copy live objects from young region / old region
+
+### Ch 3

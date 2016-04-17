@@ -7,6 +7,7 @@
 3. PTAMS / NTAMS / Concurrent marking
 4. Concurrent Threads uses 'finger' pointer optimization to claim G1 region(same as CMS)
 5. RSet scrubbing
+6. RSet coarsen
 
 ### Ch 1
 
@@ -87,3 +88,39 @@ Evacuation failures
   1. Fail to find region when trying to copy live objects from young region / old region
 
 ### Ch 3
+
+Monitoring flags for GC
+  1. -XX:+PrintGCDetails
+  2. -XX:+G1SummarizeRSetStats(diagnostic, -XX:+UnblockDiagnosticVMOptions)
+  3. -XX:+PrintAdaptiveSizePolicy
+
+G1 YoungGC:
+  1. -XX:ParallelGCThreads; 'GC Worker End' - 'GC Worker Start'
+  2. Steps(Shown in GC Log):
+    # All the following steps are parallel
+    1. 'Ext Root Scanning': root regions(VM data structures,JNI thread handles, hardware registers, global variables, thread stack roots) are scanned;(High 'Diff' suggests high variances which show work is not balanced)
+    2. 'Update RS': update regions with dirty cards; finish the unfinished work by concurrent refinement threads.
+      - The target time of updating RSets is 10% of MaxGCPauseMillis(G1RsetUpdatingPauseTimePercent); decrease this tunable will result in increasing concurrent work.
+    3. 'Scan RS': Scanned for references into CSet regions
+      - More references to the region, higher the scan time
+    4. 'Code Root Scanning'
+    5. 'Object Copy'
+      - G1 use copy times as a hint to predict time to copy a single region
+    6. 'Termination'
+      - Terminate the worker thread after checker other GC worker's queue
+    7. 'GC Worker'
+    # All the following steps are serial
+    1. Code Root Fixup
+    2. Code Root Purge
+    3. Clear CT
+    4. other
+      1. Choose CSet
+      2. Ref proc
+      3. Ref Enq
+      4. Redirty cards
+      5. Humongous reclaim
+      6. Free CSet
+
+G1 Concurrent cycle:
+  1. IHOP
+  
